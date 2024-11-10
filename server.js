@@ -1,0 +1,51 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const formData = require('form-data');
+const Mailgun = require('mailgun.js');
+
+const app = express();
+app.use(bodyParser.json()); // Parses JSON data
+app.use(express.static('public')); // Serves static files from the 'public' folder
+
+// Configure Mailgun client with the provided API key and domain
+const mailgun = new Mailgun(formData);
+const mg = mailgun.client({
+  username: 'api',
+  key: '2d70d9462f260144cac3449804b7aff1-f6fe91d3-c361b0d5', // Your provided API key
+});
+
+const domain = 'sandbox647c03af97b94ac9be7c9f468cafedd3.mailgun.org'; // Your provided Mailgun domain
+
+// Endpoint to handle subscription
+app.post('/subscribe', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.json({ success: false, message: 'Email is required' });
+  }
+
+  const data = {
+    from: `DEV@Deakin <mailgun@${domain}>`,
+    to: email,
+    subject: 'Welcome to DEV@Deakin',
+    text: 'Thank you for subscribing to DEV@Deakin!',
+    html: '<h1>Welcome to DEV@Deakin!</h1><p>Thank you for subscribing to our platform.</p>',
+  };
+
+  try {
+    const message = await mg.messages.create(domain, data);
+    console.log('Email sent:', message);
+    res.json({ success: true, message: 'Welcome email sent successfully!' });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.json({ success: false, message: 'Failed to send welcome email.' });
+  }
+});
+
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html');
+});
+
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
